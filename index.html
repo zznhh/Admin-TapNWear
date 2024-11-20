@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .dashboard-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+        .btn {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            display: inline-block;
+        }
+        .btn:hover {
+            background-color: #0056b3;
+        }
+        .scanned-receipts {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .receipt-item {
+            border-bottom: 1px solid #eee;
+            padding: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <div class="header">
+            <h1>Receipt Scanner Dashboard</h1>
+            <div>
+                <a href="scanner.html" class="btn">QR Scanner</a>
+            </div>
+        </div>
+
+        <div class="scanned-receipts">
+            <h2>Recent Scanned Receipts</h2>
+            <div id="receipts-list">
+                <!-- Receipts will be displayed here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Display scanned receipts from localStorage
+        function displayReceipts() {
+            const receiptsContainer = document.getElementById('receipts-list');
+            const scannedReceipts = JSON.parse(localStorage.getItem('scannedReceipts') || '[]');
+
+            if (scannedReceipts.length === 0) {
+                receiptsContainer.innerHTML = '<p>No receipts scanned yet.</p>';
+                return;
+            }
+
+            let html = '';
+            scannedReceipts.reverse().forEach(receipt => {
+                html += `
+                    <div class="receipt-item">
+                        <h3>Receipt ID: ${receipt.receiptId}</h3>
+                        <p>Date: ${receipt.date}</p>
+                        <p>Payment Method: ${receipt.paymentMethod}</p>
+                        <p>Total: RM${receipt.totalPrice}</p>
+                        <p>Scanned: ${new Date(receipt.scannedAt).toLocaleString()}</p>
+                        <details>
+                            <summary>View Items</summary>
+                            <ul>
+                                ${receipt.items.map(item => `
+                                    <li>${item.name}: RM${item.originalPrice} x${item.quantity} (Discount: ${item.discount}%)</li>
+                                `).join('')}
+                            </ul>
+                        </details>
+                    </div>
+                `;
+            });
+
+            receiptsContainer.innerHTML = html;
+        }
+
+        // Load the receipts when the page is loaded
+        window.onload = displayReceipts;
+    </script>
+</body>
+</html>

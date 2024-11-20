@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Receipt Scanner</title>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+            background: #f9f9f9;
+            color: #333;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+
+        #reader {
+            width: 100%;
+            margin: 20px 0;
+            padding: 15px;
+            background: #fff;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        #result {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            background: #fff;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .receipt-details {
+            margin-top: 15px;
+        }
+
+        .receipt-card {
+            background: #f0f9ff;
+            border: 1px solid #cce5ff;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .receipt-card h3 {
+            color: #007bff;
+            margin-bottom: 10px;
+        }
+
+        .receipt-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .receipt-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .receipt-item span {
+            font-weight: bold;
+        }
+
+        .icon {
+            font-size: 1.2em;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+
+        .icon-date {
+            color: #6c757d;
+        }
+
+        .icon-payment {
+            color: #17a2b8;
+        }
+
+        .icon-total {
+            color: #28a745;
+        }
+
+        ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        ul li {
+            background: #e9f7ff;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 5px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        ul li:last-child {
+            margin-bottom: 0;
+        }
+
+        ul li span {
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>Receipt Scanner</h1>
+    <div id="reader"></div>
+    <div id="result">
+        <h2>Scan Result:</h2>
+        <div class="receipt-details"></div>
+    </div>
+
+    <script>
+        function onScanSuccess(decodedText, decodedResult) {
+            console.log("Decoded text:", decodedText);
+
+            let receiptDetails = document.querySelector('.receipt-details');
+            receiptDetails.innerHTML = "";
+
+            try {
+                const data = JSON.parse(decodedText);
+
+                // Save scanned receipt to localStorage
+                const scannedReceipts = JSON.parse(localStorage.getItem('scannedReceipts') || '[]');
+                const receipt = {
+                    receiptId: Date.now(),
+                    date: data.date,
+                    paymentMethod: data.paymentMethod,
+                    totalPrice: data.totalPrice,
+                    items: data.items,
+                    scannedAt: new Date().toISOString()
+                };
+                scannedReceipts.push(receipt);
+                localStorage.setItem('scannedReceipts', JSON.stringify(scannedReceipts));
+
+                // Receipt details layout
+                const itemsHtml = data.items
+                    .map(item => `<li><span>${item.name}:</span> RM${item.originalPrice} x${item.quantity} (Discount: ${item.discount}%)</li>`)
+                    .join("");
+
+                receiptDetails.innerHTML = `
+                    <div class="receipt-card">
+                        <h3><span class="icon icon-date">📅</span> Receipt Details</h3>
+                        <div class="receipt-item">
+                            <span>Date:</span>
+                            <span>${data.date || "N/A"}</span>
+                        </div>
+                        <div class="receipt-item">
+                            <span><span class="icon icon-payment">💳</span> Payment Method:</span>
+                            <span>${data.paymentMethod || "N/A"}</span>
+                        </div>
+                        <h4>Items Purchased:</h4>
+                        <ul>${itemsHtml}</ul>
+                        <div class="receipt-item">
+                            <span><span class="icon icon-total">💰</span> Total Price:</span>
+                            <span>RM${data.totalPrice || "N/A"}</span>
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                console.warn("Invalid JSON format, treating as plain text.");
+                receiptDetails.innerHTML = `
+                    <div class="receipt-card">
+                        <h3>Scan Result</h3>
+                        <p>${decodedText}</p>
+                    </div>
+                `;
+            }
+        }
+
+        function onScanFailure(error) {
+            console.warn("QR Code scanning failed:", error);
+        }
+
+        const html5QrcodeScanner = new Html5QrcodeScanner("reader", {
+            fps: 30,
+            qrbox: { width: 300, height: 300 }
+        });
+        html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+    </script>
+</body>
+</html>
